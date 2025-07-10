@@ -159,10 +159,15 @@ const ResizablePanels: React.FC = () => {
       // Check if both panels can maintain minimum width
       if (newLeftWidth >= minWidthPx && newRightWidth >= minWidthPx) {
         if (isPanel3Extended && index === 1) {
-          // In extended mode, don't allow resizing between Panel 2 and Panel 3
-          console.log('🚫 Blocked resize of Panel 3 in extended mode');
-          return newWidths;
+          // In extended mode, divider 1 (between Panel 2 & 3) should:
+          // - Allow Panel 2 to resize
+          // - Keep Panel 3 at its fixed extended width (4000px)
+          // - Only resize Panel 2, don't touch Panel 3
+          newWidths[leftPanel] = newLeftWidth; // Resize Panel 2
+          // Don't change Panel 3 width - keep it at 4000px
+          console.log('📏 Extended mode: Panel 2 resized to:', newLeftWidth, 'Panel 3 stays at:', newWidths[2]);
         } else {
+          // Normal resizing for divider 0 (Panel 1 & 2) or when not in extended mode
           newWidths[leftPanel] = newLeftWidth;
           newWidths[rightPanel] = newRightWidth;
           console.log('📏 Panel widths updated:', newWidths);
@@ -364,7 +369,7 @@ const ResizablePanels: React.FC = () => {
               <div style={{ padding: '16px', backgroundColor: '#bbf7d0', flexShrink: 0 }}>
                 <h3 className="text-lg font-semibold mb-2 text-center">Panel 3</h3>
                 <p className="text-sm text-gray-600 text-center">Panel Width: {Math.round(widths[2])}px</p>
-                <p className="text-sm text-gray-600 text-center">Content Width: 3000px</p>
+                <p className="text-sm text-gray-600 text-center">Content Width: 4000px</p>
                 <p className="text-xs text-gray-500 mt-1 text-center">Extended Mode - Horizontal Scroll</p>
               </div>
               
@@ -374,7 +379,8 @@ const ResizablePanels: React.FC = () => {
                 className="force-horizontal-scroll"
                 style={{
                   flex: 1,
-                  width: '100%',
+                  width: `${Math.min(widths[2] - 32, 800)}px`, // Constrain width to force overflow
+                  maxWidth: `${widths[2] - 32}px`, // Don't exceed panel width
                   padding: '16px',
                   boxSizing: 'border-box',
                   // Force scrollbar with inline styles
@@ -386,7 +392,7 @@ const ResizablePanels: React.FC = () => {
                 <div 
                   ref={scrollContentRef}
                   style={{
-                    width: '3000px',
+                    width: '4000px', // Make content definitely wider than any reasonable container
                     height: '200px',
                     backgroundColor: '#86efac',
                     display: 'flex',
@@ -394,10 +400,10 @@ const ResizablePanels: React.FC = () => {
                     gap: '20px',
                     padding: '20px',
                     boxSizing: 'border-box',
-                    minWidth: '3000px' // Ensure minimum width
+                    minWidth: '4000px' // Ensure minimum width
                   }}
                 >
-                  {Array.from({ length: 8 }, (_, i) => (
+                  {Array.from({ length: 12 }, (_, i) => (
                     <div 
                       key={i}
                       style={{
