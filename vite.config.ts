@@ -3,12 +3,12 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  
-  // Enable source maps for debugging
-  build: {
-    sourcemap: true,
-  },
+  plugins: [
+    react({
+      // Include .tsx files
+      include: "**/*.{jsx,tsx}",
+    })
+  ],
   
   // Development server configuration
   server: {
@@ -18,7 +18,18 @@ export default defineConfig({
     cors: true,
     hmr: {
       overlay: true, // Show error overlay
+      port: 5173,
     },
+    watch: {
+      // Watch for file changes
+      usePolling: true,
+      interval: 100,
+    },
+  },
+  
+  // Enable source maps for debugging
+  build: {
+    sourcemap: true,
   },
   
   // Enable source maps in development
@@ -26,18 +37,17 @@ export default defineConfig({
     devSourcemap: true,
   },
   
-  // Optimize dependencies for better debugging
+  // Optimize dependencies for better debugging and hot reload
   optimizeDeps: {
     include: ['react', 'react-dom'],
-  },
-  
-  // Define global constants
-  define: {
-    __DEV__: JSON.stringify(true),
+    force: true, // Force dependency pre-bundling
   },
   
   // Enable esbuild source maps
   esbuild: {
     sourcemap: true,
   },
+  
+  // Clear screen on reload
+  clearScreen: false,
 })
