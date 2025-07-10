@@ -1,3 +1,8 @@
+const minWidthPx = 100; // Minimum width in pixelsimport React, { useEffect, useRef, useState } from 'react';
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import FullCalendar from '@fullcalendar/react';
 import React, { useEffect, useRef, useState } from 'react';
 
 const ResizablePanels: React.FC = () => {
@@ -29,7 +34,85 @@ const ResizablePanels: React.FC = () => {
     hasOverflow?: boolean;
     shouldShowScrollbar?: boolean;
   }>({});
-  const minWidthPx = 100; // Minimum width in pixels
+  
+  // Force FullCalendar to resize when panel width changes
+  useEffect(() => {
+    if (widths.length > 0) {
+      // Trigger FullCalendar resize after width change
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 200); // Increased delay to ensure proper rendering
+    }
+  }, [widths]);
+
+  // Additional effect to ensure calendar renders after initial load
+  useEffect(() => {
+    // Force calendar to render after component mounts
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+  }, []);
+
+  // Sample calendar events
+  const [calendarEvents, setCalendarEvents] = useState([
+    {
+      id: '1',
+      title: 'Team Meeting',
+      date: '2025-01-15',
+      backgroundColor: '#3b82f6',
+      borderColor: '#1d4ed8'
+    },
+    {
+      id: '2',
+      title: 'Project Deadline',
+      date: '2025-01-20',
+      backgroundColor: '#ef4444',
+      borderColor: '#dc2626'
+    },
+    {
+      id: '3',
+      title: 'Client Call',
+      date: '2025-01-22',
+      backgroundColor: '#10b981',
+      borderColor: '#059669'
+    },
+    {
+      id: '4',
+      title: 'Code Review',
+      date: '2025-01-25',
+      backgroundColor: '#f59e0b',
+      borderColor: '#d97706'
+    }
+  ]);
+
+  // Calendar event handlers with proper types
+  const handleDateSelect = (selectInfo: DateSelectArg) => {
+    const title = prompt('Please enter a new title for your event');
+    const calendarApi = selectInfo.view.calendar;
+
+    calendarApi.unselect(); // clear date selection
+
+    if (title) {
+      const newEvent = {
+        id: String(Date.now()),
+        title,
+        date: selectInfo.startStr, // Use startStr instead of dateStr
+        backgroundColor: '#6366f1',
+        borderColor: '#4f46e5'
+      };
+      
+      setCalendarEvents(prev => [...prev, newEvent]);
+      console.log('📅 New event added:', newEvent);
+    }
+  };
+
+  const handleEventClick = (clickInfo: EventClickArg) => {
+    if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'?`)) {
+      clickInfo.event.remove();
+      setCalendarEvents(prev => prev.filter(event => event.id !== clickInfo.event.id));
+      console.log('📅 Event deleted:', clickInfo.event.title);
+    }
+  };
 
   // Debug function to measure scroll container dimensions
   const measureScrollContainer = () => {
@@ -121,14 +204,16 @@ const ResizablePanels: React.FC = () => {
     updateWidths();
     window.addEventListener('resize', updateWidths);
     return () => window.removeEventListener('resize', updateWidths);
-  }, []);
+  }, [minWidthPx]);
 
-  // Measure scroll container when Panel 3 is extended
+  // Measure scroll container when Panel 3 is extended or widths change
   useEffect(() => {
-    if (isPanel3Extended && widths.length > 0) {
+    if (widths.length > 0) {
       // Delay measurement to ensure DOM is updated
       setTimeout(() => {
-        measureScrollContainer();
+        if (isPanel3Extended) {
+          measureScrollContainer();
+        }
       }, 100);
     }
   }, [isPanel3Extended, widths]);
@@ -176,7 +261,7 @@ const ResizablePanels: React.FC = () => {
 
       return newWidths;
     });
-  }, [isPanel3Extended, minWidthPx]);
+  }, [isPanel3Extended]);
 
   const onMouseUp = React.useCallback(() => {
     dragging.current = null;
@@ -369,7 +454,7 @@ const ResizablePanels: React.FC = () => {
               <div style={{ padding: '16px', backgroundColor: '#bbf7d0', flexShrink: 0 }}>
                 <h3 className="text-lg font-semibold mb-2 text-center">Panel 3</h3>
                 <p className="text-sm text-gray-600 text-center">Panel Width: {Math.round(widths[2])}px</p>
-                <p className="text-sm text-gray-600 text-center">Content Width: 4000px</p>
+                <p className="text-sm text-gray-600 text-center">Content Width: 1200px (Calendar)</p>
                 <p className="text-xs text-gray-500 mt-1 text-center">Extended Mode - Horizontal Scroll</p>
               </div>
               
@@ -379,55 +464,62 @@ const ResizablePanels: React.FC = () => {
                 className="force-horizontal-scroll"
                 style={{
                   flex: 1,
-                  width: `${Math.min(widths[2] - 32, 800)}px`, // Constrain width to force overflow
-                  maxWidth: `${widths[2] - 32}px`, // Don't exceed panel width
+                  width: `${Math.min(widths[2] - 32, 1000)}px`, // Increased for calendar
+                  maxWidth: `${widths[2] - 32}px`,
                   padding: '16px',
                   boxSizing: 'border-box',
-                  // Force scrollbar with inline styles
                   overflowX: 'scroll',
                   overflowY: 'hidden',
-                  backgroundColor: '#f0f9ff'
+                  backgroundColor: '#f9fafb'
                 }}
               >
                 <div 
                   ref={scrollContentRef}
+                  className="calendar-container panel3-calendar"
                   style={{
-                    width: '4000px', // Make content definitely wider than any reasonable container
-                    height: '200px',
-                    backgroundColor: '#86efac',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '20px',
-                    padding: '20px',
+                    width: '1200px', // Wide enough for calendar
+                    minWidth: '1200px',
+                    height: '600px', // Height for calendar
+                    backgroundColor: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '16px',
                     boxSizing: 'border-box',
-                    minWidth: '4000px' // Ensure minimum width
+                    border: '1px solid #e5e7eb'
                   }}
                 >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <div 
-                      key={i}
-                      style={{
-                        width: '300px',
-                        height: '120px',
-                        backgroundColor: '#4ade80',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        flexShrink: 0,
-                        minWidth: '300px' // Prevent shrinking
-                      }}
-                    >
-                      <strong>Block {i + 1}</strong>
-                      <span style={{ fontSize: '12px', marginTop: '8px' }}>
-                        Wide content block - should show horizontal scroll
-                      </span>
-                    </div>
-                  ))}
+                  <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#374151' }}>
+                      📅 Project Calendar - Day Grid View
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>
+                      Click dates to add events, click events to delete them
+                    </p>
+                  </div>
+                  
+                  <FullCalendar
+                    plugins={[dayGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    headerToolbar={{
+                      left: 'prev,next today',
+                      center: 'title',
+                      right: 'dayGridMonth,dayGridWeek'
+                    }}
+                    events={calendarEvents}
+                    selectable={true}
+                    selectMirror={true}
+                    dayMaxEvents={true}
+                    weekends={true}
+                    select={handleDateSelect}
+                    eventClick={handleEventClick}
+                    height="500px"
+                    aspectRatio={1.8}
+                    eventDisplay="block"
+                    displayEventTime={false}
+                    eventStartEditable={false}
+                    eventDurationEditable={false}
+                    droppable={false}
+                    editable={false}
+                  />
                 </div>
               </div>
             </div>
