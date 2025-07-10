@@ -48,3 +48,57 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+
+.fc-timegrid-axis {
+  display: block !important;
+}
+
+.fc-timegrid-col {
+  min-width: 100px !important;
+}
+
+.fc {
+  width: 4000px !important;
+  min-width: 4000px !important;
+}
+.fc-container {
+  overflow-x: scroll !important;
+}
+.fc-scroller {
+  width: 4000px !important;
+  min-width: 4000px !important;
+  overflow: visible !important;
+}
+.fc-timegrid-body {
+  width: 4000px !important;
+  min-width: 4000px !important;
+}
+.fc-timegrid-slots {
+  width: 4000px !important;
+  min-width: 4000px !important;
+}
+.fc-timegrid-cols {
+  width: 4000px !important;
+  min-width: 4000px !important;
+}
+.fc-timegrid-axis {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3 !important;
+  background: white !important;
+  width: 60px !important;
+  min-width: 60px !important;
+  display: block !important;
+}
+.fc-col-header-cell {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: white !important;
+}
+.fc-timegrid-col {
+  min-width: 500px !important;
+}
+.fc-timegrid-axis-frame {
+  display: block !important;
+}
