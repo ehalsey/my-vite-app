@@ -9,6 +9,7 @@ const ResizablePanels: React.FC = () => {
   const calendarNormalRef = useRef<FullCalendar>(null);
   const calendarExtendedRef = useRef<FullCalendar>(null);
   const calendarWrapperRef = useRef<HTMLDivElement>(null);
+  const panel3Ref = useRef<HTMLDivElement>(null);
   const minWidthPx = 100;
   const [widths, setWidths] = useState<number[]>([]);
   const [isPanel3Extended, setIsPanel3Extended] = useState(false);
@@ -56,27 +57,91 @@ const ResizablePanels: React.FC = () => {
 
   useEffect(() => {
     if (isPanel3Extended && widths.length > 0 && calendarExtendedRef.current) {
-      setTimeout(() => {
-        calendarExtendedRef.current?.getApi().updateSize();
-        const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
-        const wrapper = calendarWrapperRef.current;
-        if (extendedContainer && wrapper) {
+      const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
+      const wrapper = calendarWrapperRef.current;
+      const fcElement = extendedContainer?.querySelector('.fc');
+      const fcScroller = extendedContainer?.querySelector('.fc-scroller');
+      const fcTimegridBody = extendedContainer?.querySelector('.fc-timegrid-body');
+      const fcTimegridCols = extendedContainer?.querySelector('.fc-timegrid-cols');
+      const panel3 = panel3Ref.current;
+
+      const logDimensions = () => {
+        if (extendedContainer && wrapper && fcElement && fcScroller && fcTimegridBody && fcTimegridCols && panel3) {
           const htmlElement = extendedContainer as HTMLElement;
-          console.log('📏 Extended Container and Wrapper Dimensions:', {
-            container: {
+          const fcHtmlElement = fcElement as HTMLElement;
+          const fcScrollerHtmlElement = fcScroller as HTMLElement;
+          const fcTimegridBodyHtmlElement = fcTimegridBody as HTMLElement;
+          const fcTimegridColsHtmlElement = fcTimegridCols as HTMLElement;
+          const panel3HtmlElement = panel3 as HTMLElement;
+          console.log('📏 Extended Mode Debug:', {
+            panel3Container: {
+              clientWidth: panel3HtmlElement.clientWidth,
+              scrollWidth: panel3HtmlElement.scrollWidth,
+              offsetWidth: panel3HtmlElement.offsetWidth,
+              computedOverflowX: getComputedStyle(panel3HtmlElement).overflowX,
+              computedWidth: getComputedStyle(panel3HtmlElement).width
+            },
+            extendedContainer: {
               clientWidth: htmlElement.clientWidth,
               scrollWidth: htmlElement.scrollWidth,
-              offsetWidth: htmlElement.offsetWidth
+              offsetWidth: htmlElement.offsetWidth,
+              computedOverflowX: getComputedStyle(htmlElement).overflowX,
+              computedWidth: getComputedStyle(htmlElement).width
             },
             wrapper: {
               clientWidth: wrapper.clientWidth,
               scrollWidth: wrapper.scrollWidth,
-              offsetWidth: wrapper.offsetWidth
+              offsetWidth: wrapper.offsetWidth,
+              computedWidth: getComputedStyle(wrapper).width,
+              computedMinWidth: getComputedStyle(wrapper).minWidth
             },
-            hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth
+            fullCalendar: {
+              clientWidth: fcHtmlElement.clientWidth,
+              scrollWidth: fcHtmlElement.scrollWidth,
+              offsetWidth: fcHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcHtmlElement).minWidth
+            },
+            fcScroller: {
+              clientWidth: fcScrollerHtmlElement.clientWidth,
+              scrollWidth: fcScrollerHtmlElement.scrollWidth,
+              offsetWidth: fcScrollerHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcScrollerHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcScrollerHtmlElement).minWidth
+            },
+            fcTimegridBody: {
+              clientWidth: fcTimegridBodyHtmlElement.clientWidth,
+              scrollWidth: fcTimegridBodyHtmlElement.scrollWidth,
+              offsetWidth: fcTimegridBodyHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcTimegridBodyHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcTimegridBodyHtmlElement).minWidth
+            },
+            fcTimegridCols: {
+              clientWidth: fcTimegridColsHtmlElement.clientWidth,
+              scrollWidth: fcTimegridColsHtmlElement.scrollWidth,
+              offsetWidth: fcTimegridColsHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcTimegridColsHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcTimegridColsHtmlElement).minWidth
+            },
+            hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth,
+            panel3Width: widths[2]
           });
         }
-      }, 100);
+      };
+
+      // Initial render
+      calendarExtendedRef.current?.getApi().updateSize();
+      logDimensions();
+
+      // Force reflow
+      requestAnimationFrame(() => {
+        if (extendedContainer) {
+          extendedContainer.style.display = 'none';
+          extendedContainer.style.display = 'block';
+          extendedContainer.scrollLeft = 0;
+          logDimensions();
+        }
+      });
     } else if (!isPanel3Extended && calendarNormalRef.current) {
       setTimeout(() => {
         calendarNormalRef.current?.getApi().updateSize();
@@ -87,6 +152,7 @@ const ResizablePanels: React.FC = () => {
             clientWidth: htmlElement.clientWidth,
             scrollWidth: htmlElement.scrollWidth,
             offsetWidth: htmlElement.offsetWidth,
+            computedWidth: getComputedStyle(htmlElement).width,
             hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth
           });
         }
@@ -137,6 +203,12 @@ const ResizablePanels: React.FC = () => {
     if (isPanel3Extended && calendarExtendedRef.current) {
       setTimeout(() => {
         calendarExtendedRef.current?.getApi().updateSize();
+        const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
+        if (extendedContainer) {
+          extendedContainer.style.display = 'none';
+          extendedContainer.style.display = 'block';
+          extendedContainer.scrollLeft = 0;
+        }
       }, 50);
     } else if (calendarNormalRef.current) {
       calendarNormalRef.current?.getApi().updateSize();
@@ -192,11 +264,94 @@ const ResizablePanels: React.FC = () => {
     if (extendedContainer && calendarExtendedRef.current) {
       const resizeObserver = new ResizeObserver(() => {
         calendarExtendedRef.current?.getApi().updateSize();
+        extendedContainer.style.display = 'none';
+        extendedContainer.style.display = 'block';
+        extendedContainer.scrollLeft = 0;
       });
       resizeObserver.observe(extendedContainer);
       return () => resizeObserver.disconnect();
     }
   }, [isPanel3Extended]);
+
+  // Log dimensions on zoom change
+  useEffect(() => {
+    const handleZoomChange = () => {
+      if (isPanel3Extended && calendarExtendedRef.current) {
+        const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
+        const wrapper = calendarWrapperRef.current;
+        const fcElement = extendedContainer?.querySelector('.fc');
+        const fcScroller = extendedContainer?.querySelector('.fc-scroller');
+        const fcTimegridBody = extendedContainer?.querySelector('.fc-timegrid-body');
+        const fcTimegridCols = extendedContainer?.querySelector('.fc-timegrid-cols');
+        const panel3 = panel3Ref.current;
+
+        if (extendedContainer && wrapper && fcElement && fcScroller && fcTimegridBody && fcTimegridCols && panel3) {
+          const htmlElement = extendedContainer as HTMLElement;
+          const fcHtmlElement = fcElement as HTMLElement;
+          const fcScrollerHtmlElement = fcScroller as HTMLElement;
+          const fcTimegridBodyHtmlElement = fcTimegridBody as HTMLElement;
+          const fcTimegridColsHtmlElement = fcTimegridCols as HTMLElement;
+          const panel3HtmlElement = panel3 as HTMLElement;
+          console.log('📏 Extended Mode Debug (After Zoom):', {
+            panel3Container: {
+              clientWidth: panel3HtmlElement.clientWidth,
+              scrollWidth: panel3HtmlElement.scrollWidth,
+              offsetWidth: panel3HtmlElement.offsetWidth,
+              computedOverflowX: getComputedStyle(panel3HtmlElement).overflowX,
+              computedWidth: getComputedStyle(panel3HtmlElement).width
+            },
+            extendedContainer: {
+              clientWidth: htmlElement.clientWidth,
+              scrollWidth: htmlElement.scrollWidth,
+              offsetWidth: htmlElement.offsetWidth,
+              computedOverflowX: getComputedStyle(htmlElement).overflowX,
+              computedWidth: getComputedStyle(htmlElement).width
+            },
+            wrapper: {
+              clientWidth: wrapper.clientWidth,
+              scrollWidth: wrapper.scrollWidth,
+              offsetWidth: wrapper.offsetWidth,
+              computedWidth: getComputedStyle(wrapper).width,
+              computedMinWidth: getComputedStyle(wrapper).minWidth
+            },
+            fullCalendar: {
+              clientWidth: fcHtmlElement.clientWidth,
+              scrollWidth: fcHtmlElement.scrollWidth,
+              offsetWidth: fcHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcHtmlElement).minWidth
+            },
+            fcScroller: {
+              clientWidth: fcScrollerHtmlElement.clientWidth,
+              scrollWidth: fcScrollerHtmlElement.scrollWidth,
+              offsetWidth: fcScrollerHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcScrollerHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcScrollerHtmlElement).minWidth
+            },
+            fcTimegridBody: {
+              clientWidth: fcTimegridBodyHtmlElement.clientWidth,
+              scrollWidth: fcTimegridBodyHtmlElement.scrollWidth,
+              offsetWidth: fcTimegridBodyHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcTimegridBodyHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcTimegridBodyHtmlElement).minWidth
+            },
+            fcTimegridCols: {
+              clientWidth: fcTimegridColsHtmlElement.clientWidth,
+              scrollWidth: fcTimegridColsHtmlElement.scrollWidth,
+              offsetWidth: fcTimegridColsHtmlElement.offsetWidth,
+              computedWidth: getComputedStyle(fcTimegridColsHtmlElement).width,
+              computedMinWidth: getComputedStyle(fcTimegridColsHtmlElement).minWidth
+            },
+            hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth,
+            panel3Width: widths[2]
+          });
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleZoomChange);
+    return () => window.removeEventListener('resize', handleZoomChange);
+  }, [isPanel3Extended, widths]);
 
   if (widths.length === 0) {
     return (
@@ -222,6 +377,31 @@ const ResizablePanels: React.FC = () => {
           .fc-extended .fc {
             width: 4000px !important;
             min-width: 4000px !important;
+          }
+          .fc-extended {
+            overflow-x: scroll !important;
+          }
+          .fc-scroller {
+            width: 4000px !important;
+            min-width: 4000px !important;
+            overflow: visible !important;
+          }
+          .fc-timegrid-body {
+            width: 4000px !important;
+            min-width: 4000px !important;
+          }
+          .fc-timegrid-slots {
+            width: 4000px !important;
+            min-width: 4000px !important;
+          }
+          .fc-timegrid-cols {
+            width: 4000px !important;
+            min-width: 4000px !important;
+          }
+          .fc-timegrid-axis {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 3 !important;
           }
         `}
       </style>
@@ -276,6 +456,7 @@ const ResizablePanels: React.FC = () => {
         </div>
 
         <div
+          ref={panel3Ref}
           className="bg-green-200 transition-all duration-200 flex-shrink-0"
           style={{
             width: `${widths[2]}px`,
@@ -291,6 +472,7 @@ const ResizablePanels: React.FC = () => {
               className="fc-extended"
               style={{
                 width: `${widths[2]}px`,
+                minWidth: '4000px',
                 height: '100%',
                 backgroundColor: '#bbf7d0',
                 overflowX: 'scroll',
@@ -303,7 +485,8 @@ const ResizablePanels: React.FC = () => {
                   width: '4000px',
                   minWidth: '4000px',
                   height: '100%',
-                  display: 'block'
+                  display: 'block',
+                  overflow: 'visible'
                 }}
               >
                 <FullCalendar
@@ -316,13 +499,21 @@ const ResizablePanels: React.FC = () => {
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                   }}
                   events={[
-                    { title: 'Event 1', date: '2025-07-10T09:00:00', duration: '01:00' },
-                    { title: 'Event 2', date: '2025-07-15T14:00:00', duration: '01:30' }
+                    { title: 'Event 1', date: '2025-07-06T09:00:00', duration: '01:00' }, // Sunday
+                    { title: 'Event 2', date: '2025-07-07T14:00:00', duration: '01:30' }, // Monday
+                    { title: 'Event 3', date: '2025-07-08T10:00:00', duration: '01:00' }, // Tuesday
+                    { title: 'Event 4', date: '2025-07-09T15:00:00', duration: '01:30' }, // Wednesday
+                    { title: 'Event 5', date: '2025-07-10T11:00:00', duration: '01:00' }, // Thursday
+                    { title: 'Event 6', date: '2025-07-11T16:00:00', duration: '01:30' }, // Friday
+                    { title: 'Event 7', date: '2025-07-12T12:00:00', duration: '01:00' }  // Saturday
                   ]}
                   height="100%"
                   contentHeight="auto"
                   slotMinTime="08:00:00"
                   slotMaxTime="18:00:00"
+                  slotDuration="00:30:00"
+                  allDaySlot={false}
+                  dayMinWidth={500} // Ensure each day is at least 500px
                 />
               </div>
             </div>
