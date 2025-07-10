@@ -1,90 +1,24 @@
+import dayGridPlugin from '@fullcalendar/daygrid';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
 import React, { useEffect, useRef, useState } from 'react';
 
 const ResizablePanels: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<number | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollContentRef = useRef<HTMLDivElement>(null);
-  const [widths, setWidths] = useState<number[]>([]); // Pixel widths
+  const calendarNormalRef = useRef<FullCalendar>(null);
+  const calendarExtendedRef = useRef<FullCalendar>(null);
+  const [widths, setWidths] = useState<number[]>([]);
   const [isPanel3Extended, setIsPanel3Extended] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<{
-    container?: {
-      clientWidth: number;
-      scrollWidth: number;
-      offsetWidth: number;
-      style: {
-        width: string;
-        overflowX: string;
-        overflowY: string;
-      };
-    };
-    content?: {
-      clientWidth: number;
-      scrollWidth: number;
-      offsetWidth: number;
-      style: {
-        width: string;
-      };
-    };
-    hasOverflow?: boolean;
-    shouldShowScrollbar?: boolean;
-  }>({});
-  const minWidthPx = 100; // Minimum width in pixels
+  const minWidthPx = 100;
 
-  // Debug function to measure scroll container dimensions
-  const measureScrollContainer = () => {
-    if (scrollContainerRef.current && scrollContentRef.current) {
-      const container = scrollContainerRef.current;
-      const content = scrollContentRef.current;
-      
-      const measurements = {
-        container: {
-          clientWidth: container.clientWidth,
-          scrollWidth: container.scrollWidth,
-          offsetWidth: container.offsetWidth,
-          style: {
-            width: container.style.width,
-            overflowX: getComputedStyle(container).overflowX,
-            overflowY: getComputedStyle(container).overflowY,
-          }
-        },
-        content: {
-          clientWidth: content.clientWidth,
-          scrollWidth: content.scrollWidth,
-          offsetWidth: content.offsetWidth,
-          style: {
-            width: content.style.width,
-          }
-        },
-        hasOverflow: container.scrollWidth > container.clientWidth,
-        shouldShowScrollbar: container.scrollWidth > container.clientWidth
-      };
-      
-      console.log('📏 Scroll Container Measurements:', measurements);
-      setDebugInfo(measurements);
-      
-      // Force scrollbar visibility check
-      if (container.scrollWidth <= container.clientWidth) {
-        console.log('❌ NO OVERFLOW DETECTED - Content fits within container');
-        console.log(`Content width: ${container.scrollWidth}px, Container width: ${container.clientWidth}px`);
-      } else {
-        console.log('✅ OVERFLOW DETECTED - Scrollbar should appear');
-        console.log(`Content width: ${container.scrollWidth}px, Container width: ${container.clientWidth}px`);
-      }
-      
-      return measurements;
-    }
-    return null;
-  };
-
-  // Initialize and handle parent resize
   useEffect(() => {
     const updateWidths = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
-        const totalDividerWidth = 8 * 2; // 8px per divider, 2 dividers
+        const totalDividerWidth = 8 * 2;
         const availableWidth = containerWidth - totalDividerWidth;
-        const minTotalWidth = minWidthPx * 3; // 3 panels
+        const minTotalWidth = minWidthPx * 3;
         
         console.log('🔄 Updating widths:', {
           containerWidth,
@@ -93,15 +27,12 @@ const ResizablePanels: React.FC = () => {
         });
         
         if (availableWidth >= minTotalWidth) {
-          // Set initial widths: 20%, 20%, 60%
           const width1 = Math.max(availableWidth * 0.2, minWidthPx);
           const width2 = Math.max(availableWidth * 0.2, minWidthPx);
           const width3 = Math.max(availableWidth * 0.6, minWidthPx);
           
-          // Ensure total doesn't exceed available width
           const totalWidth = width1 + width2 + width3;
           if (totalWidth > availableWidth) {
-            // Proportionally reduce widths to fit
             const scale = availableWidth / totalWidth;
             setWidths([
               Math.max(width1 * scale, minWidthPx),
@@ -112,7 +43,6 @@ const ResizablePanels: React.FC = () => {
             setWidths([width1, width2, width3]);
           }
         } else {
-          // Not enough space for all panels at minimum width
           setWidths([minWidthPx, minWidthPx, minWidthPx]);
         }
       }
@@ -123,17 +53,14 @@ const ResizablePanels: React.FC = () => {
     return () => window.removeEventListener('resize', updateWidths);
   }, []);
 
-  // Measure scroll container when Panel 3 is extended
   useEffect(() => {
-    if (isPanel3Extended && widths.length > 0) {
-      // Delay measurement to ensure DOM is updated
+    if (isPanel3Extended && widths.length > 0 && calendarExtendedRef.current) {
       setTimeout(() => {
-        measureScrollContainer();
+        calendarExtendedRef.current.getApi().updateSize();
       }, 100);
     }
   }, [isPanel3Extended, widths]);
 
-  // Handle divider drag
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -149,25 +76,17 @@ const ResizablePanels: React.FC = () => {
       const index = dragging.current!;
       const deltaX = e.movementX;
 
-      // Calculate new widths for the panels on either side of the divider
       const leftPanel = index;
       const rightPanel = index + 1;
       
       const newLeftWidth = newWidths[leftPanel] + deltaX;
       const newRightWidth = newWidths[rightPanel] - deltaX;
 
-      // Check if both panels can maintain minimum width
       if (newLeftWidth >= minWidthPx && newRightWidth >= minWidthPx) {
         if (isPanel3Extended && index === 1) {
-          // In extended mode, divider 1 (between Panel 2 & 3) should:
-          // - Allow Panel 2 to resize
-          // - Keep Panel 3 at its fixed extended width (4000px)
-          // - Only resize Panel 2, don't touch Panel 3
-          newWidths[leftPanel] = newLeftWidth; // Resize Panel 2
-          // Don't change Panel 3 width - keep it at 4000px
+          newWidths[leftPanel] = newLeftWidth;
           console.log('📏 Extended mode: Panel 2 resized to:', newLeftWidth, 'Panel 3 stays at:', newWidths[2]);
         } else {
-          // Normal resizing for divider 0 (Panel 1 & 2) or when not in extended mode
           newWidths[leftPanel] = newLeftWidth;
           newWidths[rightPanel] = newRightWidth;
           console.log('📏 Panel widths updated:', newWidths);
@@ -182,11 +101,12 @@ const ResizablePanels: React.FC = () => {
     dragging.current = null;
     console.log('🖱️ Resizing stopped');
     
-    // Re-measure after resize
-    if (isPanel3Extended) {
+    if (isPanel3Extended && calendarExtendedRef.current) {
       setTimeout(() => {
-        measureScrollContainer();
+        calendarExtendedRef.current.getApi().updateSize();
       }, 50);
+    } else if (calendarNormalRef.current) {
+      calendarNormalRef.current.getApi().updateSize();
     }
   }, [isPanel3Extended]);
 
@@ -203,15 +123,12 @@ const ResizablePanels: React.FC = () => {
     console.log('🔄 Toggling Panel 3 from:', isPanel3Extended ? 'Extended' : 'Normal');
     setIsPanel3Extended(!isPanel3Extended);
     
-    // Update Panel 3 width based on toggle state
     setWidths(prevWidths => {
       const newWidths = [...prevWidths];
       if (!isPanel3Extended) {
-        // Switching to extended mode
         console.log('➡️ Switching to extended mode, setting Panel 3 width to 4000px');
         newWidths[2] = 4000;
       } else {
-        // Switching back to normal mode
         if (containerRef.current) {
           const containerWidth = containerRef.current.offsetWidth;
           const totalDividerWidth = 8 * 2;
@@ -226,33 +143,28 @@ const ResizablePanels: React.FC = () => {
     });
   };
 
-  // Debug: Force scrollbar test
-  const forceScrollbarTest = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      console.log('🧪 FORCE SCROLLBAR TEST');
-      console.log('Before force:', {
-        overflowX: getComputedStyle(container).overflowX,
-        scrollWidth: container.scrollWidth,
-        clientWidth: container.clientWidth
+  useEffect(() => {
+    const normalContainer = containerRef.current?.querySelector('#panel3-normal');
+    if (normalContainer && calendarNormalRef.current) {
+      const resizeObserver = new ResizeObserver(() => {
+        calendarNormalRef.current?.getApi().updateSize();
       });
-      
-      // Force overflow-x scroll
-      container.style.overflowX = 'scroll';
-      container.style.overflowY = 'hidden';
-      
-      setTimeout(() => {
-        console.log('After force:', {
-          overflowX: getComputedStyle(container).overflowX,
-          scrollWidth: container.scrollWidth,
-          clientWidth: container.clientWidth
-        });
-        measureScrollContainer();
-      }, 100);
+      resizeObserver.observe(normalContainer);
+      return () => resizeObserver.disconnect();
     }
-  };
+  }, [isPanel3Extended]);
 
-  // Ensure widths are initialized before rendering
+  useEffect(() => {
+    const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
+    if (extendedContainer && calendarExtendedRef.current) {
+      const resizeObserver = new ResizeObserver(() => {
+        calendarExtendedRef.current?.getApi().updateSize();
+      });
+      resizeObserver.observe(extendedContainer);
+      return () => resizeObserver.disconnect();
+    }
+  }, [isPanel3Extended]);
+
   if (widths.length === 0) {
     return (
       <div className="w-full h-screen overflow-hidden">
@@ -268,7 +180,6 @@ const ResizablePanels: React.FC = () => {
 
   return (
     <div className="w-full h-screen overflow-hidden">
-      {/* Toggle Button and Debug Info */}
       <div className="bg-gray-100 p-4 border-b border-gray-300">
         <div className="flex items-center justify-between">
           <button
@@ -281,41 +192,10 @@ const ResizablePanels: React.FC = () => {
           >
             Panel 3: {isPanel3Extended ? '4000px (Extended)' : 'Normal'}
           </button>
-          
-          {isPanel3Extended && (
-            <div className="flex gap-2">
-              <button
-                onClick={measureScrollContainer}
-                className="px-3 py-1 bg-green-500 text-white rounded text-sm"
-              >
-                Measure
-              </button>
-              <button
-                onClick={forceScrollbarTest}
-                className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-              >
-                Force Scrollbar
-              </button>
-            </div>
-          )}
         </div>
-        
-        {/* Debug Information Display */}
-        {isPanel3Extended && debugInfo.container && (
-          <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
-            <strong>Debug Info:</strong><br/>
-            Container: {debugInfo.container.clientWidth}px (client) | {debugInfo.container.scrollWidth}px (scroll)<br/>
-            Content: {debugInfo.content?.offsetWidth}px (offset)<br/>
-            Overflow: {debugInfo.hasOverflow ? '✅ YES' : '❌ NO'} | 
-            OverflowX: {debugInfo.container.style.overflowX}<br/>
-            Should show scrollbar: {debugInfo.shouldShowScrollbar ? 'YES' : 'NO'}
-          </div>
-        )}
       </div>
 
-      {/* Panels Container */}
       <div ref={containerRef} className="flex w-full h-full overflow-hidden">
-        {/* Panel 1 */}
         <div
           className="flex-shrink-0 flex items-center justify-center p-4 bg-red-200 overflow-auto transition-all duration-200"
           style={{ width: `${widths[0]}px`, minWidth: `${minWidthPx}px` }}
@@ -326,7 +206,6 @@ const ResizablePanels: React.FC = () => {
           </div>
         </div>
 
-        {/* Divider 1 */}
         <div
           className="w-2 bg-gray-300 cursor-col-resize hover:bg-blue-500 transition-colors duration-200 relative group flex-shrink-0"
           onMouseDown={onMouseDown(0)}
@@ -334,7 +213,6 @@ const ResizablePanels: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-gray-500 rounded-sm group-hover:bg-white"></div>
         </div>
 
-        {/* Panel 2 */}
         <div
           className="flex-shrink-0 flex items-center justify-center p-4 bg-blue-200 overflow-auto transition-all duration-200"
           style={{ width: `${widths[1]}px`, minWidth: `${minWidthPx}px` }}
@@ -345,7 +223,6 @@ const ResizablePanels: React.FC = () => {
           </div>
         </div>
 
-        {/* Divider 2 */}
         <div
           className="w-2 bg-gray-300 cursor-col-resize hover:bg-blue-500 transition-colors duration-200 relative group flex-shrink-0"
           onMouseDown={onMouseDown(1)}
@@ -353,7 +230,6 @@ const ResizablePanels: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-gray-500 rounded-sm group-hover:bg-white"></div>
         </div>
 
-        {/* Panel 3 */}
         <div
           className="bg-green-200 transition-all duration-200 flex-shrink-0"
           style={{ 
@@ -364,78 +240,51 @@ const ResizablePanels: React.FC = () => {
           }}
         >
           {isPanel3Extended ? (
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* Header */}
-              <div style={{ padding: '16px', backgroundColor: '#bbf7d0', flexShrink: 0 }}>
-                <h3 className="text-lg font-semibold mb-2 text-center">Panel 3</h3>
-                <p className="text-sm text-gray-600 text-center">Panel Width: {Math.round(widths[2])}px</p>
-                <p className="text-sm text-gray-600 text-center">Content Width: 4000px</p>
-                <p className="text-xs text-gray-500 mt-1 text-center">Extended Mode - Horizontal Scroll</p>
-              </div>
-              
-              {/* Scrollable Content */}
-              <div 
-                ref={scrollContainerRef}
-                className="force-horizontal-scroll"
-                style={{
-                  flex: 1,
-                  width: `${Math.min(widths[2] - 32, 800)}px`, // Constrain width to force overflow
-                  maxWidth: `${widths[2] - 32}px`, // Don't exceed panel width
-                  padding: '16px',
-                  boxSizing: 'border-box',
-                  // Force scrollbar with inline styles
-                  overflowX: 'scroll',
-                  overflowY: 'hidden',
-                  backgroundColor: '#f0f9ff'
-                }}
-              >
-                <div 
-                  ref={scrollContentRef}
-                  style={{
-                    width: '4000px', // Make content definitely wider than any reasonable container
-                    height: '200px',
-                    backgroundColor: '#86efac',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '20px',
-                    padding: '20px',
-                    boxSizing: 'border-box',
-                    minWidth: '4000px' // Ensure minimum width
+            <div
+              id="panel3-extended"
+              style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#bbf7d0',
+                overflowX: 'auto',
+                overflowY: 'hidden'
+              }}
+            >
+              <div style={{ minWidth: '4000px', height: '100%' }}>
+                <FullCalendar
+                  ref={calendarExtendedRef}
+                  plugins={[dayGridPlugin, timeGridPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
                   }}
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <div 
-                      key={i}
-                      style={{
-                        width: '300px',
-                        height: '120px',
-                        backgroundColor: '#4ade80',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        flexShrink: 0,
-                        minWidth: '300px' // Prevent shrinking
-                      }}
-                    >
-                      <strong>Block {i + 1}</strong>
-                      <span style={{ fontSize: '12px', marginTop: '8px' }}>
-                        Wide content block - should show horizontal scroll
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                  events={[
+                    { title: 'Event 1', date: '2025-07-10' },
+                    { title: 'Event 2', date: '2025-07-15' }
+                  ]}
+                  height="100%"
+                />
               </div>
             </div>
           ) : (
-            <div className="p-4 text-center h-full flex flex-col justify-center">
-              <h3 className="text-lg font-semibold mb-2">Panel 3</h3>
-              <p className="text-sm text-gray-600">Width: {Math.round(widths[2])}px</p>
-              <p className="text-xs text-gray-500 mt-1">Normal Mode</p>
+            <div className="p-4 h-full" id="panel3-normal">
+              <FullCalendar
+                ref={calendarNormalRef}
+                plugins={[dayGridPlugin, timeGridPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                }}
+                events={[
+                  { title: 'Event 1', date: '2025-07-10' },
+                  { title: 'Event 2', date: '2025-07-15' }
+                ]}
+                height="100%"
+              />
             </div>
           )}
         </div>
