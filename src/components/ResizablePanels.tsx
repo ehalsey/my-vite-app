@@ -8,9 +8,10 @@ const ResizablePanels: React.FC = () => {
   const dragging = useRef<number | null>(null);
   const calendarNormalRef = useRef<FullCalendar>(null);
   const calendarExtendedRef = useRef<FullCalendar>(null);
+  const calendarWrapperRef = useRef<HTMLDivElement>(null);
+  const minWidthPx = 100;
   const [widths, setWidths] = useState<number[]>([]);
   const [isPanel3Extended, setIsPanel3Extended] = useState(false);
-  const minWidthPx = 100;
 
   useEffect(() => {
     const updateWidths = () => {
@@ -19,18 +20,18 @@ const ResizablePanels: React.FC = () => {
         const totalDividerWidth = 8 * 2;
         const availableWidth = containerWidth - totalDividerWidth;
         const minTotalWidth = minWidthPx * 3;
-        
+
         console.log('🔄 Updating widths:', {
           containerWidth,
           availableWidth,
           minTotalWidth
         });
-        
+
         if (availableWidth >= minTotalWidth) {
           const width1 = Math.max(availableWidth * 0.2, minWidthPx);
           const width2 = Math.max(availableWidth * 0.2, minWidthPx);
           const width3 = Math.max(availableWidth * 0.6, minWidthPx);
-          
+
           const totalWidth = width1 + width2 + width3;
           if (totalWidth > availableWidth) {
             const scale = availableWidth / totalWidth;
@@ -56,7 +57,39 @@ const ResizablePanels: React.FC = () => {
   useEffect(() => {
     if (isPanel3Extended && widths.length > 0 && calendarExtendedRef.current) {
       setTimeout(() => {
-        calendarExtendedRef.current.getApi().updateSize();
+        calendarExtendedRef.current?.getApi().updateSize();
+        const extendedContainer = containerRef.current?.querySelector('#panel3-extended');
+        const wrapper = calendarWrapperRef.current;
+        if (extendedContainer && wrapper) {
+          const htmlElement = extendedContainer as HTMLElement;
+          console.log('📏 Extended Container and Wrapper Dimensions:', {
+            container: {
+              clientWidth: htmlElement.clientWidth,
+              scrollWidth: htmlElement.scrollWidth,
+              offsetWidth: htmlElement.offsetWidth
+            },
+            wrapper: {
+              clientWidth: wrapper.clientWidth,
+              scrollWidth: wrapper.scrollWidth,
+              offsetWidth: wrapper.offsetWidth
+            },
+            hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth
+          });
+        }
+      }, 100);
+    } else if (!isPanel3Extended && calendarNormalRef.current) {
+      setTimeout(() => {
+        calendarNormalRef.current?.getApi().updateSize();
+        const normalContainer = containerRef.current?.querySelector('#panel3-normal');
+        if (normalContainer) {
+          const htmlElement = normalContainer as HTMLElement;
+          console.log('📏 Normal Container Dimensions:', {
+            clientWidth: htmlElement.clientWidth,
+            scrollWidth: htmlElement.scrollWidth,
+            offsetWidth: htmlElement.offsetWidth,
+            hasOverflow: htmlElement.scrollWidth > htmlElement.clientWidth
+          });
+        }
       }, 100);
     }
   }, [isPanel3Extended, widths]);
@@ -78,7 +111,7 @@ const ResizablePanels: React.FC = () => {
 
       const leftPanel = index;
       const rightPanel = index + 1;
-      
+
       const newLeftWidth = newWidths[leftPanel] + deltaX;
       const newRightWidth = newWidths[rightPanel] - deltaX;
 
@@ -100,13 +133,13 @@ const ResizablePanels: React.FC = () => {
   const onMouseUp = React.useCallback(() => {
     dragging.current = null;
     console.log('🖱️ Resizing stopped');
-    
+
     if (isPanel3Extended && calendarExtendedRef.current) {
       setTimeout(() => {
-        calendarExtendedRef.current.getApi().updateSize();
+        calendarExtendedRef.current?.getApi().updateSize();
       }, 50);
     } else if (calendarNormalRef.current) {
-      calendarNormalRef.current.getApi().updateSize();
+      calendarNormalRef.current?.getApi().updateSize();
     }
   }, [isPanel3Extended]);
 
@@ -122,7 +155,7 @@ const ResizablePanels: React.FC = () => {
   const togglePanel3 = () => {
     console.log('🔄 Toggling Panel 3 from:', isPanel3Extended ? 'Extended' : 'Normal');
     setIsPanel3Extended(!isPanel3Extended);
-    
+
     setWidths(prevWidths => {
       const newWidths = [...prevWidths];
       if (!isPanel3Extended) {
@@ -180,6 +213,18 @@ const ResizablePanels: React.FC = () => {
 
   return (
     <div className="w-full h-screen overflow-hidden">
+      <style>
+        {`
+          .fc-normal .fc {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          .fc-extended .fc {
+            width: 4000px !important;
+            min-width: 4000px !important;
+          }
+        `}
+      </style>
       <div className="bg-gray-100 p-4 border-b border-gray-300">
         <div className="flex items-center justify-between">
           <button
@@ -232,27 +277,74 @@ const ResizablePanels: React.FC = () => {
 
         <div
           className="bg-green-200 transition-all duration-200 flex-shrink-0"
-          style={{ 
+          style={{
             width: `${widths[2]}px`,
             minWidth: `${minWidthPx}px`,
             height: '100%',
-            position: 'relative'
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
           {isPanel3Extended ? (
             <div
               id="panel3-extended"
+              className="fc-extended"
               style={{
-                width: '100%',
+                width: `${widths[2]}px`,
                 height: '100%',
                 backgroundColor: '#bbf7d0',
-                overflowX: 'auto',
+                overflowX: 'scroll',
                 overflowY: 'hidden'
               }}
             >
-              <div style={{ minWidth: '4000px', height: '100%' }}>
+              <div
+                ref={calendarWrapperRef}
+                style={{
+                  width: '4000px',
+                  minWidth: '4000px',
+                  height: '100%',
+                  display: 'block'
+                }}
+              >
                 <FullCalendar
                   ref={calendarExtendedRef}
+                  plugins={[dayGridPlugin, timeGridPlugin]}
+                  initialView="timeGridWeek"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                  }}
+                  events={[
+                    { title: 'Event 1', date: '2025-07-10T09:00:00', duration: '01:00' },
+                    { title: 'Event 2', date: '2025-07-15T14:00:00', duration: '01:30' }
+                  ]}
+                  height="100%"
+                  contentHeight="auto"
+                  slotMinTime="08:00:00"
+                  slotMaxTime="18:00:00"
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              id="panel3-normal"
+              className="fc-normal"
+              style={{
+                width: '100%',
+                height: '100%',
+                overflow: 'hidden'
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'block'
+                }}
+              >
+                <FullCalendar
+                  ref={calendarNormalRef}
                   plugins={[dayGridPlugin, timeGridPlugin]}
                   initialView="dayGridMonth"
                   headerToolbar={{
@@ -265,26 +357,9 @@ const ResizablePanels: React.FC = () => {
                     { title: 'Event 2', date: '2025-07-15' }
                   ]}
                   height="100%"
+                  contentHeight="auto"
                 />
               </div>
-            </div>
-          ) : (
-            <div className="p-4 h-full" id="panel3-normal">
-              <FullCalendar
-                ref={calendarNormalRef}
-                plugins={[dayGridPlugin, timeGridPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={{
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                }}
-                events={[
-                  { title: 'Event 1', date: '2025-07-10' },
-                  { title: 'Event 2', date: '2025-07-15' }
-                ]}
-                height="100%"
-              />
             </div>
           )}
         </div>
