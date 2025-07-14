@@ -1,10 +1,7 @@
-import dayGridPlugin from '@fullcalendar/daygrid';
 import FullCalendar from '@fullcalendar/react';
-import scrollGridPlugin from '@fullcalendar/scrollgrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import React, { useEffect, useRef, useState } from 'react';
-import { events } from './events';
-import './index.css';
+import '../index.css';
+import DoctorCalendar from './DoctorCalendar';
 import { logDimensions } from './logger';
 
 const ResizablePanels: React.FC = () => {
@@ -226,7 +223,7 @@ const ResizablePanels: React.FC = () => {
             minWidth: `${minWidthPx}px`,
             height: '100%',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'auto' // Enable both vertical and horizontal scroll if needed
           }}
         >
           <div
@@ -238,7 +235,7 @@ const ResizablePanels: React.FC = () => {
               height: '100%',
               backgroundColor: '#bbf7d0',
               overflowX: 'scroll',
-              overflowY: 'hidden'
+              overflowY: 'auto' // Enable vertical scroll for calendar content
             }}
           >
             <div
@@ -251,32 +248,7 @@ const ResizablePanels: React.FC = () => {
                 overflow: 'visible'
               }}
             >
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, scrollGridPlugin]}
-                initialView="timeGridWeek"
-                headerToolbar={{
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: 'dayGridMonth,timeGridWeek'
-                }}
-                events={events}
-                schedulerLicenseKey="0070982010-fcs-1750820052"
-                height="100%"
-                contentHeight="auto"
-                slotMinTime="08:00:00"
-                slotMaxTime="18:00:00"
-                slotDuration="00:30:00"
-                allDaySlot={false}
-                dayMinWidth={500}
-                stickyHeaderDates={true}
-                eventContent={(arg) => (
-                  <div>
-                    <b>{arg.event.title}</b>
-                    <p>{arg.event.extendedProps.providerId}</p>
-                  </div>
-                )}
-              />
+              <DoctorCalendar/>
             </div>
           </div>
         </div>
