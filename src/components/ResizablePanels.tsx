@@ -11,7 +11,17 @@ const ResizablePanels: React.FC = () => {
   const calendarWrapperRef = useRef<HTMLDivElement>(null);
   const panel3Ref = useRef<HTMLDivElement>(null);
   const minWidthPx = 100;
-  const [widths, setWidths] = useState<number[]>([]);
+  const getInitialWidths = (): number[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const value = localStorage.getItem('resizablePanels_widths');
+      if (value === null) return [];
+      return JSON.parse(value);
+    } catch {
+      return [];
+    }
+  };
+  const [widths, setWidths] = useState<number[]>(getInitialWidths);
 
   useEffect(() => {
     const updateWidths = () => {
@@ -20,6 +30,12 @@ const ResizablePanels: React.FC = () => {
         const totalDividerWidth = 8 * 2;
         const availableWidth = containerWidth - totalDividerWidth;
         const minTotalWidth = minWidthPx * 3;
+
+        const initialWidths = getInitialWidths();
+        if (initialWidths.length === 3) {
+          setWidths(initialWidths);
+          return;
+        }
 
         if (availableWidth >= minTotalWidth) {
           const width1 = Math.max(availableWidth * 0.2, minWidthPx);
@@ -37,6 +53,12 @@ const ResizablePanels: React.FC = () => {
     window.addEventListener('resize', updateWidths);
     return () => window.removeEventListener('resize', updateWidths);
   }, []);
+  // Save widths to localStorage whenever they change
+  useEffect(() => {
+    if (widths.length === 3) {
+      localStorage.setItem('resizablePanels_widths', JSON.stringify(widths));
+    }
+  }, [widths]);
 
   useEffect(() => {
     if (widths.length > 0 && calendarRef.current) {

@@ -2,13 +2,45 @@ import React, { useState } from 'react';
 import { appointments, resources } from './events';
 
 const DoctorCalendar = () => {
-  const [showAllProviders, setShowAllProviders] = useState(true);
-  const [currentResourceIndex, setCurrentResourceIndex] = useState(0);
-  const [currentDateIndex, setCurrentDateIndex] = useState(0);
-  const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState('2025-07-13');
-  const [endDate, setEndDate] = useState('2025-07-16');
+  // Load settings from localStorage if available
+  const getInitialSetting = <T,>(key: string, fallback: T): T => {
+    if (typeof window === 'undefined') return fallback;
+    try {
+      const value = localStorage.getItem(key);
+      if (value === null) return fallback;
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const [showAllProviders, setShowAllProviders] = useState<boolean>(() => getInitialSetting('doctorCalendar_showAllProviders', true));
+  const [currentResourceIndex, setCurrentResourceIndex] = useState<number>(() => getInitialSetting('doctorCalendar_currentResourceIndex', 0));
+  const [currentDateIndex, setCurrentDateIndex] = useState<number>(() => getInitialSetting('doctorCalendar_currentDateIndex', 0));
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>(() => getInitialSetting('doctorCalendar_selectedDoctors', []));
+  const [startDate, setStartDate] = useState<string>(() => getInitialSetting('doctorCalendar_startDate', '2025-07-13'));
+  const [endDate, setEndDate] = useState<string>(() => getInitialSetting('doctorCalendar_endDate', '2025-07-16'));
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
+
+  // Save settings to localStorage on change
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_showAllProviders', JSON.stringify(showAllProviders));
+  }, [showAllProviders]);
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_currentResourceIndex', JSON.stringify(currentResourceIndex));
+  }, [currentResourceIndex]);
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_currentDateIndex', JSON.stringify(currentDateIndex));
+  }, [currentDateIndex]);
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_selectedDoctors', JSON.stringify(selectedDoctors));
+  }, [selectedDoctors]);
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_startDate', JSON.stringify(startDate));
+  }, [startDate]);
+  React.useEffect(() => {
+    localStorage.setItem('doctorCalendar_endDate', JSON.stringify(endDate));
+  }, [endDate]);
 
   // Generate dates based on selected date range
   const generateDates = () => {
