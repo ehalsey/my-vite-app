@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { appointments, resources } from './events';
 
 const DoctorCalendar = () => {
-  const [showAllProviders, setShowAllProviders] = useState(false);
+  const [showAllProviders, setShowAllProviders] = useState(true);
   const [currentResourceIndex, setCurrentResourceIndex] = useState(0);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
@@ -41,11 +41,8 @@ const DoctorCalendar = () => {
 
   // Get visible dates based on toggle state
   const getVisibleDates = () => {
-    if (showAllProviders) {
-      return dates.slice(0, 2); // Show 2 days when showing all providers (to fit screen)
-    } else {
-      return dates.slice(currentDateIndex, currentDateIndex + 2); // Show 2 days
-    }
+    // Always show the full selected date range
+    return dates;
   };
 
   // Get visible resources based on selection

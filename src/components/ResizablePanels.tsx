@@ -219,11 +219,12 @@ const ResizablePanels: React.FC = () => {
           ref={panel3Ref}
           className="bg-green-200 transition-all duration-200 flex-shrink-0"
           style={{
-            width: `${widths[2]}px`,
+            // The width of panel 3 is calculated as: container width - widths[0] - widths[1] - 2*dividerWidth
+            flex: `1 1 0%`,
             minWidth: `${minWidthPx}px`,
             height: '100%',
             position: 'relative',
-            overflow: 'auto' // Enable both vertical and horizontal scroll if needed
+            overflow: 'auto'
           }}
         >
           <div
@@ -231,7 +232,6 @@ const ResizablePanels: React.FC = () => {
             className="fc-container"
             style={{
               width: '100%',
-              minWidth: '4000px',
               height: '100%',
               backgroundColor: '#bbf7d0',
               overflowX: 'scroll',
@@ -241,8 +241,8 @@ const ResizablePanels: React.FC = () => {
             <div
               ref={calendarWrapperRef}
               style={{
-                width: '4000px',
-                minWidth: '4000px',
+                width: '100%',
+                minWidth: '40px',
                 height: '100%',
                 display: 'block',
                 overflow: 'visible'
