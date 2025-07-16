@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import '../index.css';
 import DoctorCalendar from './DoctorCalendar';
 import { logDimensions } from './logger';
+import GrokDoc from './GrokDoc';
+import { appointments, events, resources } from './events';
 
 const ResizablePanels: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -270,7 +272,8 @@ const ResizablePanels: React.FC = () => {
                 overflow: 'visible'
               }}
             >
-              <DoctorCalendar/>
+              {/* <DoctorCalendar/> */}
+              <GrokDoc resources={resources} appointments={appointments}/>
             </div>
           </div>
         </div>
