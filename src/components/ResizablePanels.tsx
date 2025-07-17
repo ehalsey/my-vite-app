@@ -1,10 +1,11 @@
 import FullCalendar from '@fullcalendar/react';
 import React, { useEffect, useRef, useState } from 'react';
 import '../index.css';
-import DoctorCalendar from './DoctorCalendar';
 import { logDimensions } from './logger';
-import GrokDoc from './GrokDoc';
-import { appointments, events, resources } from './events';
+// import DoctorCalendar from './DoctorCalendar';
+// import GrokDoc from './GrokDoc';
+// import { appointments, events, resources } from './events';
+import ExampleCalendarUsage from './ExampleCalendarUsage';
 
 const ResizablePanels: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -273,7 +274,8 @@ const ResizablePanels: React.FC = () => {
               }}
             >
               {/* <DoctorCalendar/> */}
-              <GrokDoc resources={resources} appointments={appointments}/>
+              {/* <GrokDoc resources={resources} appointments={appointments}/> */}
+              <ExampleCalendarUsage/>
             </div>
           </div>
         </div>

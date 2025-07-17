@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
-export interface Resource {
+interface Resource {
   id: string;
   title: string;
   color: string;
   specialty: string;
 }
 
-export interface Appointment {
+interface Appointment {
   id: string;
   title: string;
   start: string;
@@ -31,8 +31,6 @@ const GrokDoc: React.FC<DoctorCalendarProps> = ({
   initialEndDate = new Date().toISOString().split('T')[0],
 }) => {
   const [showAllProviders, setShowAllProviders] = useState(false);
-  const [currentResourceIndex, setCurrentResourceIndex] = useState(0);
-  const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
@@ -127,32 +125,8 @@ const GrokDoc: React.FC<DoctorCalendarProps> = ({
     setEndDate(end);
   };
 
-  const scrollDatesLeft = () => {
-    if (currentDateIndex > 0) {
-      setCurrentDateIndex(currentDateIndex - 1);
-    }
-  };
-
-  const scrollDatesRight = () => {
-    if (currentDateIndex < dates.length - 2) {
-      setCurrentDateIndex(currentDateIndex + 1);
-    }
-  };
-
-  const scrollResourcesLeft = () => {
-    if (currentResourceIndex > 0) {
-      setCurrentResourceIndex(currentResourceIndex - 1);
-    }
-  };
-
-  const scrollResourcesRight = () => {
-    if (currentResourceIndex < resources.length - 2) {
-      setCurrentResourceIndex(currentResourceIndex + 1);
-    }
-  };
-
   // Generate time slots from 7 AM to 6 PM
-  const timeSlots = [];
+  const timeSlots: string[] = [];
   for (let hour = 7; hour < 18; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
     timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
@@ -201,8 +175,8 @@ const GrokDoc: React.FC<DoctorCalendarProps> = ({
   const visibleResources = getVisibleResources();
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-full mx-auto">
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
+      <div className="max-w-full mx-auto flex flex-col flex-grow">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Multi-Day Doctor Schedule</h1>
           
@@ -405,8 +379,8 @@ const GrokDoc: React.FC<DoctorCalendarProps> = ({
         </div>
 
         {/* Calendar Container */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex-grow flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto flex-grow">
             {/* Date Headers Row */}
             <div className="flex border-b-2 border-gray-300 sticky top-0 z-30 bg-white" style={{ 
               minWidth: `${visibleDates.length * visibleResources.length * (showAllProviders ? 150 : 200) + 80}px`
